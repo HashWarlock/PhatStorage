@@ -12,7 +12,7 @@ describe("PhatStorage test", () => {
 
     before(async function setup(): Promise<void> {
         factory = await this.devPhase.getFactory(
-            './contracts/phat_storage/target/ink/phat_storage.contract',
+            './contracts/phat_storage_bkup/target/ink/phat_storage_bkup.contract',
             { contractType: ContractType.InkCode }
         );
 

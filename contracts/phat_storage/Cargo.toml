@@ -5,13 +5,13 @@ authors = ["HashWarlock"]
 edition = "2021"
 
 [dependencies]
-ink = { version = "4.2", default-features = false }
+ink = { version = "4", default-features = false }
 
 scale = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive"] }
 scale-info = { version = "2", default-features = false, features = ["derive"], optional = true }
 
-pink-extension = { version = "0.4.2", default-features = false }
-pink-s3 = { version = "0.4.1", default-features = false }
+pink-extension = { version = "0.4", default-features = false }
+pink-s3 = { path = "./s3", default-features = false }
 
 [lib]
 name = "phat_storage"

@@ -10,6 +10,7 @@ mod phat_storage {
     use super::pink;
 
     use alloc::{vec::Vec, string::String};
+    use pink_extension::chain_extension::HttpResponse;
     use scale::{Decode, Encode};
 
     /// Type alias for the contract's result type.
@@ -60,7 +61,7 @@ mod phat_storage {
         }
 
         #[ink(message)]
-        pub fn s3_put(&self, endpoint: String, region: String, bucket: String, object_key: String, value: Vec<u8>) -> Result<()> {
+        pub fn s3_put(&self, endpoint: String, region: String, bucket: String, object_key: String, value: Vec<u8>) -> Result<HttpResponse> {
             if self.admin != self.env().caller() {
                 return Err(Error::NoPermissions);
             }
@@ -69,35 +70,29 @@ mod phat_storage {
             }
             let s3_vhm = s3::S3::new(&endpoint.as_str(), &region.as_str(), &self.access_key.as_str(), &self.secret_key.as_str()).unwrap().virtual_host_mode();
 
-            s3_vhm.put(&bucket.as_str(), &object_key.as_str(), &value).or(Err(Error::InvalidRequest));
-
-            Ok(())
+            s3_vhm.put(&bucket.as_str(), &object_key.as_str(), &value).or(Err(Error::InvalidRequest))
         }
 
         #[ink(message)]
-        pub fn s3_head(&self, endpoint: String, region: String, bucket: String, object_key: String) -> Result<u64> {
+        pub fn s3_head(&self, endpoint: String, region: String, bucket: String, object_key: String) -> Result<HttpResponse> {
             if self.access_key == String::default() || self.secret_key == String::default() {
                 return Err(Error::KeysNotConfigured)
             }
             let s3_vhm = s3::S3::new(&endpoint.as_str(), &region.as_str(), &self.access_key.as_str(), &self.secret_key.as_str()).unwrap().virtual_host_mode();
-            let head = s3_vhm.head(&bucket.as_str(), &object_key.as_str()).or(Err(Error::InvalidRequest));
-
-            Ok(head.unwrap())
+            s3_vhm.head(&bucket.as_str(), &object_key.as_str()).or(Err(Error::InvalidRequest))
         }
 
         #[ink(message)]
-        pub fn s3_get(&self, endpoint: String, region: String, bucket: String, object_key: String) -> Result<Vec<u8>> {
+        pub fn s3_get(&self, endpoint: String, region: String, bucket: String, object_key: String) -> Result<HttpResponse> {
             if self.access_key == String::default() || self.secret_key == String::default() {
                 return Err(Error::KeysNotConfigured)
             }
             let s3_vhm = s3::S3::new(&endpoint.as_str(), &region.as_str(), &self.access_key.as_str(), &self.secret_key.as_str()).unwrap().virtual_host_mode();
-            let value = s3_vhm.get(&bucket.as_str(), &object_key.as_str()).or(Err(Error::InvalidRequest));
-
-            value
+            s3_vhm.get(&bucket.as_str(), &object_key.as_str()).or(Err(Error::InvalidRequest))
         }
 
         #[ink(message)]
-        pub fn s3_delete(&self, endpoint: String, region: String, bucket: String, object_key: String) -> Result<()> {
+        pub fn s3_delete(&self, endpoint: String, region: String, bucket: String, object_key: String) -> Result<HttpResponse> {
             if self.admin != self.env().caller() {
                 return Err(Error::NoPermissions);
             }
@@ -105,33 +100,38 @@ mod phat_storage {
                 return Err(Error::KeysNotConfigured)
             }
             let s3_vhm = s3::S3::new(&endpoint.as_str(), &region.as_str(), &self.access_key.as_str(), &self.secret_key.as_str()).unwrap().virtual_host_mode();
-            s3_vhm.delete(&bucket.as_str(), &object_key.as_str()).or(Err(Error::InvalidRequest));
-
-            Ok(())
+            s3_vhm.delete(&bucket.as_str(), &object_key.as_str()).or(Err(Error::InvalidRequest))
         }
 
         #[ink(message)]
         pub fn it_works(&self) {
             // I don't care to expose them.
-            let endpoint = "s3.us-west-1.amazonaws.com";
+            let endpoint = "endpoint.4everland.co";
             let region = "us-west-1";
-            let access_key = &self.access_key.as_str();
-            let secret_key = &self.secret_key.as_str();
+            let access_key = self.access_key.as_str();
+            let secret_key = self.secret_key.as_str();
 
             let s3 = s3::S3::new(endpoint, region, access_key, secret_key)
             .unwrap()
             .virtual_host_mode(); // virtual host mode is required for newly created AWS S3 buckets.
 
-            let bucket = "wrlx-aws-s3";
+            let bucket = "wrlx-bucket";
             let object_key = "path/to/foo";
             let value = b"bar";
 
             s3.put(bucket, object_key, value).unwrap();
 
             let head = s3.head(bucket, object_key).unwrap();
-            assert_eq!(head.content_length, value.len() as u64);
+            let mut head_content_length: u64 = 0;
+            for (k, v) in head.headers {
+                if k.to_ascii_lowercase() == "content-length" {
+                    head_content_length = v.parse().expect("expect length")
+                }
+            }
+            assert_eq!(head_content_length, value.len() as u64);
 
-            let v = s3.get(bucket, object_key).unwrap();
+            let v = s3.get(bucket, object_key).unwrap().body;
+
             assert_eq!(v, value);
 
             s3.delete(bucket, object_key).unwrap();

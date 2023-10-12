@@ -92,7 +92,7 @@ Test the contract with a predefined S3 bucket and object with the `it_works` fun
 > Note: you will need to update the function to hardcode values to function correctly. If you have installed [`swanky phala`](https://github.com/Phala-Network/swanky-plugin-phala) and are running on a machine with x86 chip, you can execute the following:
 
 ```bash
-swanky phala contract test -t phat_storage
+swanky phala contract test -t phat_storage_bkup
 ```
 
 ## Errors
